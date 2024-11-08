@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
-import axios from 'axios';
+import React, { useState } from "react";
+import { Html5Qrcode } from "html5-qrcode";
+import axios from "axios";
 
 const QrCodeVoting = () => {
   const [qrResult, setQrResult] = useState("");
-  const [voteCount, setVoteCount] = useState(10);  // Number of votes
-  const [delay, setDelay] = useState(1000);        // Delay in ms
+  const [voteCount, setVoteCount] = useState(10); // Number of votes
+  const [delay, setDelay] = useState(1000); // Delay in ms
   const [isVoting, setIsVoting] = useState(false); // Voting state
 
   // Handle QR code image upload and decode
@@ -13,15 +13,16 @@ const QrCodeVoting = () => {
     const file = event.target.files[0];
     if (file) {
       const html5QrCode = new Html5Qrcode("qr-reader");
-      
+
       // Use the library to scan the uploaded image
-      html5QrCode.scanFile(file, true)
-        .then(decodedText => {
-          setQrResult(decodedText);  // Store the decoded URL
+      html5QrCode
+        .scanFile(file, true)
+        .then((decodedText) => {
+          setQrResult(decodedText); // Store the decoded URL
           console.log(`QR Code URL: ${decodedText}`);
-          html5QrCode.clear();       // Clear the scanner
+          html5QrCode.clear(); // Clear the scanner
         })
-        .catch(err => console.error("QR Code scan error:", err));
+        .catch((err) => console.error("QR Code scan error:", err));
     }
   };
 
@@ -34,21 +35,37 @@ const QrCodeVoting = () => {
 
     setIsVoting(true);
 
-    for (let i = 0; i < voteCount; i++) {
-      try {
-        const response = await axios.get(qrResult);
-        if (response.status === 200) {
-          console.log(`Vote ${i + 1} cast successfully!`);
-        } else {
-          console.log(`Failed to cast vote ${i + 1}: ${response.status}`);
-        }
-      } catch (error) {
-        console.error(`Error casting vote ${i + 1}: ${error}`);
+    const proxyUrl = "https://cors-anywhere.herokuapp.com/";
+    const targetUrl = qrResult;
+    const voteCount = 10;   // Number of votes
+    const delay = 1000;     // Delay in milliseconds between each vote
+    
+    const startVoting = async () => {
+      if (!qrResult) {
+        alert("Please provide a valid QR code URL.");
+        return;
       }
-      
-      // Wait for the specified delay before sending the next request
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
+    
+      for (let i = 0; i < voteCount; i++) {
+        try {
+          const response = await axios.get(proxyUrl + targetUrl);  // Use proxy URL for each request
+          if (response.status === 200) {
+            console.log(`Vote ${i + 1} cast successfully!`);
+          } else {
+            console.log(`Failed to cast vote ${i + 1}: ${response.status}`);
+          }
+        } catch (error) {
+          console.error(`Error casting vote ${i + 1}:`, error);
+        }
+    
+        // Wait for the specified delay before sending the next request
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    };
+    
+    // Example function call (start voting)
+    startVoting();
+    
 
     setIsVoting(false);
   };
@@ -62,9 +79,11 @@ const QrCodeVoting = () => {
         <input type="file" accept="image/*" onChange={handleImageUpload} />
       </div>
 
-      <div id="qr-reader" style={{ display: 'none' }}></div>
-      
-      <p>Decoded URL: <strong>{qrResult}</strong></p>
+      <div id="qr-reader" style={{ display: "none" }}></div>
+
+      <p>
+        Decoded URL: <strong>{qrResult}</strong>
+      </p>
 
       <div>
         <label>Number of Votes:</label>
